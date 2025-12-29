@@ -3,7 +3,6 @@ import time
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
-from django.contrib import admin
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView, LogoutView
@@ -14,7 +13,7 @@ from django.shortcuts import render
 from django.urls import path
 from django.utils.decorators import method_decorator
 from django.views import View
-from django.views.generic import ListView, TemplateView, DetailView
+from django.views.generic import ListView, TemplateView
 
 from .models import Contact, User
 
@@ -59,12 +58,12 @@ class Login(LoginView):
 
 @method_decorator(login_required, 'dispatch')
 class ContactListView(ListView):
-   template_name = 'mychat/app/contacts.html'
+   template_name = 'mychat/app/contact_list.html'
    model = Contact
 
 @method_decorator(login_required, "dispatch")
 class AddContactView(TemplateView):
-   template_name = 'add_contact.html'
+   template_name = 'mychat/app/add_contact.html'
 
 class SleepMixin:
    def get(self, req, *args, **kwargs):
@@ -94,7 +93,7 @@ urlpatterns = [
    path('', EntryView.as_view()),
    path('profile', UserProfileView.as_view()),
    path('contacts', ContactListView.as_view()),
-   path('add_contact', AddContactView.as_view()),
+   path('contacts/add', AddContactView.as_view()),
    path('users', UserListView.as_view()),
    path('login', Login.as_view()),
    path('logout', Logout.as_view()),

@@ -1,9 +1,9 @@
-{% extends "base.html" %}
+{% extends "mychat/base.html" %}
 
 {% block content_class %} class="w-[90%] mx-auto" {% endblock %}
 {% block content %}
    <header class="flex items-center mt-2">
-      <a href="javascript:void(0)" onclick="history.back()" class="text-3xl inline-flex items-center">
+      <a href="/contacts" class="text-3xl inline-flex items-center">
          <iconify-icon icon="mdi:keyboard-arrow-left"></iconify-icon>
       </a>
       <span class="flex-1 text-center">添加朋友</span>

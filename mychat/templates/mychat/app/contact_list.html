@@ -1,24 +1,22 @@
-{% extends "app_base.html" %}
+{% extends "mychat/app/base.html" %}
 
-{% load static %}
 {% load user_tags %}
-
+{% block app_title %} 通讯录 {% endblock %}
 {% block app_content %}
    <div class="text-right">
-      <a href="/add_contact">
+      <a href="/contacts/add">
          <iconify-icon icon="mdi:add-circle"></iconify-icon>
       </a>
    </div>
-   <div class="hover:bg-blue-500">
+   <div class="hover:bg-gray-200">
       <iconify-icon icon="mdi:account-plus"></iconify-icon>
       新的朋友
    </div>
    <hr class="my-2">
-   static = {% static 'avatars/default' %}
    <ul>
       {% for c in contact_list %}
          <li
-            class="mb-2 hover:bg-blue-500 active:bg-blue-500 {% if not forloop.first %} border-t border-t-gray-500 pt-2{% endif %}"
+            class="mb-2 hover:bg-gray-200 {% if not forloop.first %} border-t border-t-gray-500 pt-2{% endif %}"
          >
             {% user_avatar %}
             {{ c.remark }}

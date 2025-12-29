@@ -1,9 +1,15 @@
 {% extends "mychat/base.html" %}
 
 {% block content %}
-   <div id="app-content">
-      {% block app_content %}
-      {% endblock %}
+   <div id="app" class="h-screen box-border pb-16 flex flex-col w-[70vw] mx-auto">
+      <header class="text-center text-lg bg-gray-100">
+         {% block app_title %}
+         {% endblock %}
+      </header>
+      <div id="app-content" class="mt-3 flex-1">
+         {% block app_content %}
+         {% endblock %}
+      </div>
    </div>
 
    <div id="dock" class="dock">
@@ -13,7 +19,7 @@
       </a>
       <a href="/contacts">
          <iconify-icon icon="mdi:account-details"></iconify-icon>
-         <span class="dock-label">联系人</span>
+         <span class="dock-label">通讯录</span>
       </a>
       <a href="/profile">
          <iconify-icon icon="mdi:account"></iconify-icon>
