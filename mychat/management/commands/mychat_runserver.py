@@ -1,11 +1,12 @@
 import os
 import shutil
 
+from django.conf import settings
 from django.core.files.base import ContentFile
 from django.core.management import BaseCommand, call_command
 from django.db import connection
 
-from site2.models import Contact, User
+from mychat.models import Contact, User
 
 def default_avatar_file():
    bs = open('data/default-avatar', 'rb').read()
@@ -32,11 +33,7 @@ def insert_contacts_data():
 class Command(BaseCommand):
    def handle(self, *args, **options):
       if os.environ.get('RUN_MAIN') != 'true':
-         shutil.rmtree('media')
-         os.remove('db.sqlite3')
-
-         call_command('migrate')
-         call_command('migrate', "--run-syncdb", "site2")
+         call_command('migrate_mychat')
 
          insert_users_data()
          insert_contacts_data()

@@ -8,23 +8,18 @@
    <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css"/>
    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
    <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.8/dist/htmx.min.js"></script>
-   {#   <script src="https://unpkg.com/idiomorph@0.7.4/dist/idiomorph-ext.min.js"></script>#}
-
    <script src="https://cdn.jsdelivr.net/npm/iconify-icon@3.0.0/dist/iconify-icon.min.js"></script>
    <script src="https://unpkg.com/alpinejs" defer></script>
 
    <style>
-       html, body {
-           width: 100%;
-       }
    </style>
    {% block style %}
    {% endblock %}
 
 </head>
-<body>
-{% load static %}
-<div id="content" {% block content_class %}{% endblock %}>
+<body >
+
+<div id="content" {% block content_classes %}{% endblock %}>
    {% block content %}
    {% endblock %}
 </div>

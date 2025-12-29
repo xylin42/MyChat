@@ -5,4 +5,4 @@ static
 site1
 .idea
 .pytest_cache
-db.sqlite3
+dbs

@@ -2,8 +2,8 @@ from django.apps import AppConfig, apps
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
-class Site2Config(AppConfig):
-   name = 'site2'
+class MyChatConfig(AppConfig):
+   name = 'mychat'
 
    def ready__(self):
       User = self.apps.get_model('auth.User')

@@ -13,6 +13,7 @@ from django.forms.widgets import Input
 from django.shortcuts import render
 from django.urls import path
 from django.utils.decorators import method_decorator
+from django.views import View
 from django.views.generic import ListView, TemplateView, DetailView
 
 from .models import Contact, User
@@ -46,7 +47,10 @@ class Logout(LogoutView):
       return '/'
 
 class Login(LoginView):
-   template_name = 'login.html'
+   template_name = 'mychat/portal/portal_login.html'
+
+   def get_success_url(self):
+      return "/"
 
    def get_form_kwargs(self):
       kwargs = super().get_form_kwargs()
@@ -55,7 +59,7 @@ class Login(LoginView):
 
 @method_decorator(login_required, 'dispatch')
 class ContactListView(ListView):
-   template_name = 'contacts.html'
+   template_name = 'mychat/app/contacts.html'
    model = Contact
 
 @method_decorator(login_required, "dispatch")
@@ -80,8 +84,14 @@ class UserListView(SleepMixin, ListView):
 class UserProfileView(LoginRequiredMixin, TemplateView):
    template_name = 'user_profile.html'
 
+class EntryView(View):
+   def get(self, req):
+      if req.user.is_authenticated:
+         return render(req, "mychat/app/index.html")
+      return render(req, 'mychat/portal/portal.html')
+
 urlpatterns = [
-   path('', index),
+   path('', EntryView.as_view()),
    path('profile', UserProfileView.as_view()),
    path('contacts', ContactListView.as_view()),
    path('add_contact', AddContactView.as_view()),

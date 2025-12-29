@@ -1,0 +1,10 @@
+{% extends "mychat/app/base.html" %}
+
+{% block app_content %}
+   <div class="h-screen box-border pb-16 flex items-center justify-center">
+      <div class="flex flex-col gap-2 text-md">
+         <span>你好, {{ user.display_name }}</span>
+         <span>欢迎来到 MyChat</span>
+      </div>
+   </div>
+{% endblock %}
