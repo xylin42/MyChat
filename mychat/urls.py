@@ -1,3 +1,4 @@
+import asyncio
 import time
 
 from django.conf import settings
@@ -9,8 +10,9 @@ from django.contrib.auth.views import LoginView, LogoutView
 from django.forms import BoundField
 from django.forms.renderers import DjangoTemplates
 from django.forms.widgets import Input
+from django.http import StreamingHttpResponse
 from django.shortcuts import render
-from django.urls import path
+from django.urls import path, include
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.generic import ListView, TemplateView
@@ -89,8 +91,25 @@ class EntryView(View):
          return render(req, "mychat/app/index.html")
       return render(req, 'mychat/portal/portal.html')
 
+class MessageListView(ListView):
+   template_name = 'mychat/app/message_list.html'
+
+async def messages(req):
+   async def inner():
+      while True:
+         yield f'data: hello\n\n'
+         await asyncio.sleep(2)
+
+   return StreamingHttpResponse(inner(), content_type='text/event-stream')
+
+
 urlpatterns = [
+   path('chatroom', TemplateView.as_view(template_name='chatroom.html')),
+   path('messages', messages),
+   path('chat/', include('chat.urls')),
+
    path('', EntryView.as_view()),
+   path('messages', MessageListView.as_view()),
    path('profile', UserProfileView.as_view()),
    path('contacts', ContactListView.as_view()),
    path('contacts/add', AddContactView.as_view()),

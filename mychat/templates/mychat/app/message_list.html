@@ -1,0 +1,27 @@
+{% extends "mychat/app/base.html" %}
+
+{% block app_content %}
+   <script>
+      function sseData() {
+          return {
+              messages: [],
+              init() {
+                  this.source = new EventSource('/sse')
+                  this.source.onmessage = (event) => {
+                      this.messages.push(event.data)
+                  }
+                  this.source.onerror = (error) => {
+                      console.log('[E] SSE 错误', error)
+                  }
+              },
+          }
+      }
+   </script>
+   <div>
+      <ul x-data="sseData()" x-init="init()">
+         <template x-for="(msg, index) in messages" :key="index">
+            <li x-html="msg"></li>
+         </template>
+      </ul>
+   </div>
+{% endblock %}

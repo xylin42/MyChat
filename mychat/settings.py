@@ -1,3 +1,14 @@
+CHANNEL_LAYERS = {
+   'default': {
+      'BACKEND': 'channels_redis.core.RedisChannelLayer',
+      'CONFIG': {
+         'hosts': [('127.0.0.1', 6379)],
+      }
+   }
+}
+
+ASGI_APPLICATION = 'mychat.asgi.application'
+
 MEDIA_URL = '/media/'
 MEDIA_ROOT = 'media/'
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
@@ -9,6 +20,9 @@ DEBUG = True
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 INSTALLED_APPS = [
+   'daphne',
+   #'chat',
+
    'django.contrib.admin',
    'django.contrib.auth',
    'django.contrib.contenttypes',
@@ -21,7 +35,9 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
    'django.contrib.sessions.middleware.SessionMiddleware',
    'django.contrib.auth.middleware.AuthenticationMiddleware',
-   'mychat.middleware.LoginRequiredMiddleware',
+
+   #'mychat.middleware.LoginRequiredMiddleware',
+
    'django.middleware.csrf.CsrfViewMiddleware',
    'django.contrib.messages.middleware.MessageMiddleware'
 ]

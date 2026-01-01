@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1">
+   <title>Document</title>
+</head>
+<body>
+<ul>
+
+</ul>
+<script>
+    const eventlist = document.querySelector('ul')
+    const es = new EventSource('messages')
+    es.onmessage = (e) => {
+        const newitem = document.createElement('li')
+        newitem.textContent = `message: ${e.data}`
+        eventlist.appendChild(newitem)
+    }
+</script>
+</body>
+</html>

@@ -42,6 +42,7 @@ class User(AbstractUser):
    avatar = models.ImageField(upload_to=user_avatar_path(thumbnail=False))
    avatar_thumbnail = models.ImageField(upload_to=user_avatar_path(thumbnail=True))
    display_name = models.CharField(max_length=150)
+   # inbox = models.ForeignKey("MessageInbox", on_delete=models.CASCADE)
 
    def save(self, *args, **kwargs):
       super().save(*args, **kwargs)
@@ -50,8 +51,20 @@ class User(AbstractUser):
          avatar = normalize_avatar(avatar)
          self.avatar = avatar
          self.avatar_thumbnail = create_avatar_thumbnail(avatar)
-         super().save(*args, **kwargs)
+         super().save()
          x=1
+
+class Message(models.Model):
+   msg_type = models.IntegerField()
+   body = models.TextField()
+   created_at = models.DateTimeField()
+
+class MessageInbox(models.Model):
+   receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name='+')
+   sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='+')
+   message = models.ForeignKey(Message, on_delete=models.CASCADE)
+   delivered_at = models.DateTimeField()
+   read_at = models.DateTimeField()
 
 
 class Contact(models.Model):

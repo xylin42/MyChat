@@ -6,3 +6,4 @@ site1
 .idea
 .pytest_cache
 dbs
+temp
