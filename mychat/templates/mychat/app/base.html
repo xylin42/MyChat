@@ -13,10 +13,14 @@
    </div>
 
    <div id="dock" class="dock">
-      <a href="/messages" class="indicator">
-         <iconify-icon icon="mdi:message"></iconify-icon>
+      <a href="/conversations" class="indicator">
+         <iconify-icon icon="mdi:message">
+
+         </iconify-icon>
          <span class="dock-label">消息</span>
-         <span class="indicator-item badge badge-secondary" id="messageCounter">12</span>
+         <span class="indicator-item badge badge-secondary badge-xs" id="messageCounter">
+            {{ user.messages_unread_count }}
+         </span>
       </a>
       <a href="/contacts">
          <iconify-icon icon="mdi:account-details"></iconify-icon>

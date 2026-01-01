@@ -1,4 +1,5 @@
 import os
+import uuid
 from io import BytesIO
 
 from PIL import Image, ImageOps
@@ -42,6 +43,8 @@ class User(AbstractUser):
    avatar = models.ImageField(upload_to=user_avatar_path(thumbnail=False))
    avatar_thumbnail = models.ImageField(upload_to=user_avatar_path(thumbnail=True))
    display_name = models.CharField(max_length=150)
+   remark = models.CharField(max_length=150, null=True)
+   messages_unread_count = models.IntegerField(default=0)
    # inbox = models.ForeignKey("MessageInbox", on_delete=models.CASCADE)
 
    def save(self, *args, **kwargs):
@@ -55,16 +58,42 @@ class User(AbstractUser):
          x=1
 
 class Message(models.Model):
-   msg_type = models.IntegerField()
-   body = models.TextField()
-   created_at = models.DateTimeField()
-
-class MessageInbox(models.Model):
-   receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name='+')
+   # msg_type = models.IntegerField()
+   payload = models.TextField()
+   created_at = models.DateTimeField(default=timezone.now)
+   conversation = models.ForeignKey('Conversation', related_name='messages', on_delete=models.CASCADE)
+   seq = models.BigIntegerField()
    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='+')
-   message = models.ForeignKey(Message, on_delete=models.CASCADE)
-   delivered_at = models.DateTimeField()
-   read_at = models.DateTimeField()
+
+
+class Conversation(models.Model):
+   member1 = models.ForeignKey(User, on_delete=models.CASCADE, related_name='+')
+   member2 = models.ForeignKey(User, on_delete=models.CASCADE, related_name='+')
+   last_msg = models.ForeignKey(Message, on_delete=models.CASCADE, related_name='+', null=True)
+   uuid = models.UUIDField(default=uuid.uuid4)
+   last_seq = models.BigIntegerField(default=0)
+
+   def peer(self, me):
+      if me.id == self.member1.id:
+         return self.member2
+      else:
+         return self.member1
+
+   def mark_read(self):
+      self.update(
+         read_at=timezone.now(),
+         unread=0,
+      )
+
+class UserConvState(models.Model):
+   user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='+')
+   peer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='+')
+   conv = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name='+')
+   last_read_seq = models.BigIntegerField(default=0)
+
+   @property
+   def unread(self):
+      return self.conv.last_msg.seq - self.last_read_seq
 
 
 class Contact(models.Model):

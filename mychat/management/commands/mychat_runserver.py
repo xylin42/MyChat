@@ -4,7 +4,8 @@ from django.contrib.auth.hashers import make_password, get_hasher
 from django.core.files.base import ContentFile
 from django.core.management import BaseCommand, call_command
 
-from mychat.models import Contact, User
+from mychat.messages import send_message, start_conversation
+from mychat.models import Contact, User, Message, Conversation
 
 
 def default_avatar_file():
@@ -22,6 +23,18 @@ def fixed_salt():
       salt = get_hasher('default').salt()
       f.write(salt)
       return salt
+
+def insert_messages():
+   recipient = User.objects.get(pk=1)
+   for i in range(2,5):
+      sender = User.objects.get(pk=i)
+      conv = start_conversation(sender, recipient)
+      send_message(conv.id, sender, recipient, f"[1] 你好，用户1")
+      send_message(conv.id, sender, recipient, f"[2] 你好，用户1")
+      send_message(conv.id, sender, recipient, f"[3] 你好，用户1")
+      conv.refresh_from_db()
+      assert conv.last_seq == 3
+      assert conv.last_msg.payload == '[3] 你好，用户1'
 
 def insert_users_data():
    password = make_password('123456', fixed_salt())
@@ -57,6 +70,7 @@ class Command(BaseCommand):
 
          insert_users_data()
          insert_contacts_data()
+         insert_messages()
 
          #test_channels_layer()
 

@@ -1,7 +1,8 @@
 {% extends "mychat/app/base.html" %}
-
 {% load user_tags %}
+
 {% block app_title %} 通讯录 {% endblock %}
+
 {% block app_content %}
    <div class="text-right">
       <a href="/contacts/add">
@@ -13,10 +14,10 @@
       新的朋友
    </div>
    <hr class="my-2">
-   <ul>
+   <ul class="divide-y divide-gray-300">
       {% for c in contact_list %}
          <li
-            class="mb-2 hover:bg-gray-200 {% if not forloop.first %} border-t border-t-gray-500 pt-2{% endif %}"
+            class="py-2 hover:bg-gray-200"
          >
             {% user_avatar %}
             {{ c.remark }}

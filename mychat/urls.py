@@ -7,6 +7,7 @@ from django.contrib import admin
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView, LogoutView
+from django.db.models import Count, Q
 from django.forms import BoundField
 from django.forms.renderers import DjangoTemplates
 from django.forms.widgets import Input
@@ -15,9 +16,9 @@ from django.shortcuts import render
 from django.urls import path, include
 from django.utils.decorators import method_decorator
 from django.views import View
-from django.views.generic import ListView, TemplateView
+from django.views.generic import ListView, TemplateView, DetailView
 
-from .models import Contact, User
+from .models import Contact, User, Conversation, Message, UserConvState
 
 
 @login_required
@@ -91,8 +92,27 @@ class EntryView(View):
          return render(req, "mychat/app/index.html")
       return render(req, 'mychat/portal/portal.html')
 
-class MessageListView(ListView):
-   template_name = 'mychat/app/message_list.html'
+class ConversationListView(ListView):
+   template_name = 'mychat/app/conversations.html'
+   context_object_name = 'conversation_states'
+
+   def get_queryset(self):
+      user = self.request.user
+      qs = UserConvState.objects.filter(user=user).select_related("conv", "conv__last_msg", "user", "peer")
+      return qs
+
+class ConversationDetailView(DetailView):
+   model = Conversation
+   context_object_name = 'conv'
+   template_name = 'mychat/popups/conversation.html'
+
+   def get_context_data(self, **kwargs):
+      data = super().get_context_data(**kwargs)
+      conv = data['conv']
+      messages = conv.messages.order_by('seq')[:10]
+      data['messages'] = messages
+      return data
+
 
 async def messages(req):
    async def inner():
@@ -105,11 +125,12 @@ async def messages(req):
 
 urlpatterns = [
    path('chatroom', TemplateView.as_view(template_name='chatroom.html')),
-   path('messages', messages),
+   #path('messages', messages),
    path('chat/', include('chat.urls')),
 
    path('', EntryView.as_view()),
-   path('messages', MessageListView.as_view()),
+   path('conversations', ConversationListView.as_view()),
+   path('conversations/<int:pk>', ConversationDetailView.as_view()),
    path('profile', UserProfileView.as_view()),
    path('contacts', ContactListView.as_view()),
    path('contacts/add', AddContactView.as_view()),
