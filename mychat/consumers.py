@@ -1,37 +1,26 @@
+import asyncio
 import json
 
-from asgiref.sync import async_to_sync
-from channels.generic.websocket import WebsocketConsumer
+from channels.generic.http import AsyncHttpConsumer
 
 
-class ChatConsumer(WebsocketConsumer):
-   def connect(self):
-      self.room_name = self.scope['url_route']['kwargs']['room_name']
-      self.room_group_name = f'chat_{self.room_name}'
-      async_to_sync(self.channel_layer.group_add)(
-         self.room_group_name, self.channel_name,
-      )
-      self.accept()
+class MyConsumer(AsyncHttpConsumer):
+   async def handle(self, body):
+      user = self.scope['user']
+      self.group_name = f'user:{user.id}'
+      await self.channel_layer.group_add(self.group_name, self.channel_name)
+      await self.send_headers(headers=[
+         (b'content-type', b'text/event-stream'),
+         (b'cache-control', b'no-cache'),
+         (b'connection', b'keep-alive'),
+      ])
+      self.closed = False
+      while not self.closed:
+         await asyncio.sleep(60)
+         await self.send_body(b': ping\n\n', more_body=True)
 
-   def disconnect(self, close_mode):
-      async_to_sync(self.channel_layer.group_discard)(
-         self.room_group_name, self.channel_name,
-      )
+   async def notify(self, event):
+      data = json.dumps(event['payload'], ensure_ascii=False).encode('utf-8')
 
-   def receive(self, text_data):
-      text_data_json = json.loads(text_data)
-      message = text_data_json['message']
-
-      async_to_sync(self.channel_layer.group_send)(
-         self.room_group_name, dict(
-            type='chat.message',
-            message=message
-         )
-      )
-
-   def chat_message(self, event):
-      message = event['message']
-
-      self.send(text_data=json.dumps(dict(
-         message=message,
-      )))
+      chunk = b'event: message\ndata: ' + data + b'\n\n'
+      await self.send_body(chunk, more_body=True)

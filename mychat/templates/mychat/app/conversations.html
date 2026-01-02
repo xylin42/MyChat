@@ -1,5 +1,4 @@
 {% extends "mychat/app/base.html" %}
-{% load user_tags %}
 
 {% block app_title %} 消息({{ unread }}) {% endblock %}
 
@@ -7,10 +6,10 @@
    <ul class="divide-y divide-gray-200">
       {% for state in conversation_states %}
          <li class="py-2 hover:bg-gray-200">
-            <a href="/conversation/{{ state.conv.id }}" class="flex">
+            <a href="/conversations/{{ state.conv.id }}" class="flex">
                <div class="indicator">
                   <span class="indicator-item badge badge-secondary badge-xs">{{ state.unread }}</span>
-                  {% user_avatar state.peer %}
+                  {% include "mychat/partials/avatar.html" with avatar_url=state.peer.avatar.url %}
                </div>
                <div class="flex flex-col ml-3">
                   <span>{{ state.peer.display_name }}</span>

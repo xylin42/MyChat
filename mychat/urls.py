@@ -1,6 +1,8 @@
 import asyncio
+import json
 import time
 
+from channels.generic.http import AsyncHttpConsumer
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
@@ -12,7 +14,7 @@ from django.forms import BoundField
 from django.forms.renderers import DjangoTemplates
 from django.forms.widgets import Input
 from django.http import StreamingHttpResponse
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.urls import path, include
 from django.utils.decorators import method_decorator
 from django.views import View
@@ -97,31 +99,28 @@ class ConversationListView(ListView):
    context_object_name = 'conversation_states'
 
    def get_queryset(self):
-      user = self.request.user
-      qs = UserConvState.objects.filter(user=user).select_related("conv", "conv__last_msg", "user", "peer")
+      qs = (UserConvState.objects.filter(user_id=self.request.user.id)
+            .select_related("conv", "conv__last_msg", "user", "peer"))
       return qs
 
 class ConversationDetailView(DetailView):
-   model = Conversation
-   context_object_name = 'conv'
+   model = UserConvState
+   context_object_name = 'state'
    template_name = 'mychat/popups/conversation.html'
+
+   def get_object(self, queryset=None):
+      return get_object_or_404(
+         UserConvState, conv_id=self.kwargs['pk'], user_id=self.request.user.id,
+      )
 
    def get_context_data(self, **kwargs):
       data = super().get_context_data(**kwargs)
-      conv = data['conv']
-      messages = conv.messages.order_by('seq')[:10]
+      state = data['state']
+      conv = state.conv
+      messages = conv.messages.order_by('seq')
       data['messages'] = messages
+      data['peer'] = state.peer
       return data
-
-
-async def messages(req):
-   async def inner():
-      while True:
-         yield f'data: hello\n\n'
-         await asyncio.sleep(2)
-
-   return StreamingHttpResponse(inner(), content_type='text/event-stream')
-
 
 urlpatterns = [
    path('chatroom', TemplateView.as_view(template_name='chatroom.html')),

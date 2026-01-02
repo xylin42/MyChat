@@ -1,10 +1,47 @@
 {% extends "mychat/popups/base.html" %}
+{% load user_tags %}
 
-{% block popup_title %}
-   {{ peer.display_name }}
-{% endblock %}
+{% block popup_title %} {{ peer.display_name }} {% endblock %}
+{% block back_url %} /conversations {% endblock %}
+
 {% block popup_content %}
    <ul id="messages">
-
+      {% for msg in messages %}
+         <li>
+            {% with user_id=user.id user_avatar_url=user.avatar.url peer_id=peer.id peer_avatar_url=peer.avatar.url body=msg.body %}
+               {% include "mychat/partials/message.html" %}
+            {% endwith %}
+         </li>
+      {% endfor %}
    </ul>
+   <form action="/messages" method="post" class="flex mt-5 gap-3 items-center">
+      <textarea
+         id="message-input"
+         rows="1"
+         name="text" class="text-area resize-none w-full p-2 focus:outline-none rounded-md"></textarea>
+      <iconify-icon icon="mdi:send" class="text-2xl"></iconify-icon>
+      <iconify-icon icon="mdi:emoji" class="text-2xl"></iconify-icon>
+   </form>
+   <script>
+       const ws = new WebSocket('/ws/conversations/{{ state.conv.id }}/')
+       const state = {
+           'conv_id': {{ state.conv_id }},
+           'user_id': {{ state.user.id }},
+           'user_avatar_url': "{{ state.user.avatar.url }}",
+           'peer_id': {{ state.peer.id }},
+           'peer_avatar_url': "{{ state.peer.avatar.url }}"
+       }
+
+       ws.onopen = (e) => {
+           // ws.send(JSON.stringify(state))
+       }
+       ws.onmessage = (e) => {
+           // const data = JSON.parse(e.data)
+           console.log('[新消息] data=', e.data)
+           const ul = document.getElementById('messages')
+           const li = document.createElement('li')
+           li.innerHTML = e.data
+           ul.appendChild(li)
+       }
+   </script>
 {% endblock %}

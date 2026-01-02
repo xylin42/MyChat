@@ -1,19 +1,63 @@
+import asyncio
+import json
 import os
+from datetime import datetime
 
 from channels.auth import AuthMiddlewareStack
+from channels.generic.http import AsyncHttpConsumer
+from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.routing import ProtocolTypeRouter, URLRouter
-from channels.security.websocket import AllowedHostsOriginValidator
 from django.core.asgi import get_asgi_application
+from django.template.loader import render_to_string
+from django.urls import re_path
 
-from mychat.routing import websocket_urlpatterns
+from mychat.models import UserConvState
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'mychat.settings')
+
+class MyConsumer(AsyncWebsocketConsumer):
+   async def connect(self):
+      await self.accept()
+
+      conv_id = self.scope['url_route']['kwargs']['conv_id']
+      user = self.scope['user']
+      group_name = f'user-{user.id}-{conv_id}'
+      await self.channel_layer.group_add(group_name, self.channel_name)
+      await self.get_state(conv_id, user.id)
+      print(f'[*] 监听对话消息, "{group_name}"')
+
+   async def get_state(self, conv_id, user_id):
+      state = await UserConvState.objects.select_related('user', 'peer').aget(user_id=user_id, conv_id=conv_id)
+      self.state = dict(
+         user_id = state.user.id,
+         user_avatar_url = state.user.avatar_url,
+         peer_id = state.peer.id,
+         peer_avatar_url=state.peer.avatar_url,
+      )
+
+   async def receive(self, text_data=None, bytes_data=None):
+      pass
+
+   async def dispatch(self, msg):
+      print('[*] 新事件, msg=', msg)
+      await super().dispatch(msg)
+
+   async def message(self, event):
+      data = event['data']
+      ctx = dict(
+         **self.state, **data
+      )
+      html = render_to_string('mychat/partials/message.html', ctx)
+      await self.send(text_data=html)
+
 
 application = ProtocolTypeRouter(
    {
       'http': get_asgi_application(),
-      'websocket': AllowedHostsOriginValidator(
-         AuthMiddlewareStack(URLRouter(websocket_urlpatterns)),
-      )
+      'websocket': AuthMiddlewareStack(URLRouter(
+         [
+            re_path(r'^ws/conversations/(?P<conv_id>\w+)/$', MyConsumer.as_asgi())
+         ]
+      ))
    }
 )

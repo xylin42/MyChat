@@ -5,7 +5,7 @@ from io import BytesIO
 from PIL import Image, ImageOps
 from django.contrib.auth.models import AbstractUser
 from django.core.files.base import ContentFile
-from django.db import models
+from django.db import models, transaction
 from django.utils import timezone
 
 def user_avatar_path(thumbnail):
@@ -45,9 +45,11 @@ class User(AbstractUser):
    display_name = models.CharField(max_length=150)
    remark = models.CharField(max_length=150, null=True)
    messages_unread_count = models.IntegerField(default=0)
-   # inbox = models.ForeignKey("MessageInbox", on_delete=models.CASCADE)
 
-   def save(self, *args, **kwargs):
+   def avatar_url(self):
+      return self.avatar.url
+
+   def save_old(self, *args, **kwargs):
       super().save(*args, **kwargs)
       avatar = self.avatar
       if avatar:
@@ -55,23 +57,38 @@ class User(AbstractUser):
          self.avatar = avatar
          self.avatar_thumbnail = create_avatar_thumbnail(avatar)
          super().save()
-         x=1
 
 class Message(models.Model):
-   # msg_type = models.IntegerField()
-   payload = models.TextField()
+   body = models.TextField()
    created_at = models.DateTimeField(default=timezone.now)
-   conversation = models.ForeignKey('Conversation', related_name='messages', on_delete=models.CASCADE)
+   conv = models.ForeignKey('Conversation', related_name='messages', on_delete=models.CASCADE)
    seq = models.BigIntegerField()
    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='+')
 
+class ConversationQuerySet(models.QuerySet):
+   def get_or_create_by_id_pair(self, id_pair):
+      with transaction.atomic():
+         id_pair = sorted(id_pair)
+         conv, created = self.get_or_create(user1_id=id_pair[0], user2_id=id_pair[1])
+         if created:
+            UserConvState.objects.create(conv_id=conv.id, user_id=id_pair[0], peer_id=id_pair[1])
+            UserConvState.objects.create(conv_id=conv.id, user_id=id_pair[1], peer_id=id_pair[0])
+         return conv, created
 
 class Conversation(models.Model):
-   member1 = models.ForeignKey(User, on_delete=models.CASCADE, related_name='+')
-   member2 = models.ForeignKey(User, on_delete=models.CASCADE, related_name='+')
+   user1 = models.ForeignKey(User, on_delete=models.CASCADE, related_name='+')
+   user2 = models.ForeignKey(User, on_delete=models.CASCADE, related_name='+')
    last_msg = models.ForeignKey(Message, on_delete=models.CASCADE, related_name='+', null=True)
-   uuid = models.UUIDField(default=uuid.uuid4)
    last_seq = models.BigIntegerField(default=0)
+   objects = models.Manager.from_queryset(ConversationQuerySet)()
+
+   class Meta:
+      constraints = [
+         models.UniqueConstraint(
+            fields=['user1', 'user2'],
+            name='unique_conversation_pair'
+         )
+      ]
 
    def peer(self, me):
       if me.id == self.member1.id:

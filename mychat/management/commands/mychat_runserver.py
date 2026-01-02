@@ -1,5 +1,6 @@
 import os
 
+from channels.layers import get_channel_layer
 from django.contrib.auth.hashers import make_password, get_hasher
 from django.core.files.base import ContentFile
 from django.core.management import BaseCommand, call_command
@@ -8,8 +9,12 @@ from mychat.messages import send_message, start_conversation
 from mychat.models import Contact, User, Message, Conversation
 
 
-def default_avatar_file():
-   bs = open('data/default-avatar', 'rb').read()
+def avatar_yelling_cat():
+   bs = open('data/yellingcat@192.webp', 'rb').read()
+   return ContentFile(bs, 'avatar')
+
+def avatar_yelling_woman():
+   bs = open('data/yellingwoman@192.webp', 'rb').read()
    return ContentFile(bs, 'avatar')
 
 def fixed_salt():
@@ -25,25 +30,27 @@ def fixed_salt():
       return salt
 
 def insert_messages():
-   recipient = User.objects.get(pk=1)
+   user = User.objects.get(pk=1)
    for i in range(2,5):
-      sender = User.objects.get(pk=i)
-      conv = start_conversation(sender, recipient)
-      send_message(conv.id, sender, recipient, f"[1] 你好，用户1")
-      send_message(conv.id, sender, recipient, f"[2] 你好，用户1")
-      send_message(conv.id, sender, recipient, f"[3] 你好，用户1")
+      peer = User.objects.get(pk=i)
+      conv, created = Conversation.objects.get_or_create_by_id_pair((user.id, peer.id))
+
+      for j in range(3):
+         send_message(conv.id, peer.id, user.id, f"[{j}] 你好，{user.display_name}")
+         send_message(conv.id, user.id, peer.id, f'[{j}] 你好，{peer.display_name}')
+
       conv.refresh_from_db()
-      assert conv.last_seq == 3
-      assert conv.last_msg.payload == '[3] 你好，用户1'
+      assert conv.last_seq == 6
 
 def insert_users_data():
    password = make_password('123456', fixed_salt())
    for i in range(1,5):
-      x = User.objects.create(
+      avatar = avatar_yelling_cat() if i == 1 else avatar_yelling_woman()
+      User.objects.create(
          username=f'user{i}',
          display_name=f"用户{i}",
          password=password,
-         avatar=default_avatar_file(),
+         avatar=avatar,
       )
 
 def insert_contacts_data():
@@ -55,13 +62,17 @@ def insert_contacts_data():
       )
 
 def test_channels_layer():
-   import channels.layers
    from asgiref.sync import async_to_sync
 
-   channel_layer = channels.layers.get_channel_layer()
+   channel_layer = get_channel_layer()
+
    async_to_sync(channel_layer.send)('test_channel', dict(type='hello'))
    x = async_to_sync(channel_layer.receive)('test_channel')
+
    assert x == dict(type='hello')
+
+   #async_to_sync(channel_layer.flush)()
+
 
 class Command(BaseCommand):
    def handle(self, *args, **options):
@@ -72,6 +83,6 @@ class Command(BaseCommand):
          insert_contacts_data()
          insert_messages()
 
-         #test_channels_layer()
+         test_channels_layer()
 
       call_command('runserver')

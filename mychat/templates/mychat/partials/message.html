@@ -1,0 +1,9 @@
+<div class="chat {% if peer_id != user_id %} chat-start {% else %} chat-end {% endif %}">
+   {{ user_id }}-{{ peer_id }}
+   {% if peer_id != user_id %}
+      {% include "mychat/partials/avatar.html" with avatar_url=peer_avatar_url extra_classes="chat-image" %}
+   {% else %}
+      {% include "mychat/partials/avatar.html" with avatar_url=user_avatar_url extra_classes="chat-image" %}
+   {% endif %}
+   <div class="chat-bubble">{{ body }}</div>
+</div>
