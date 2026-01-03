@@ -7,3 +7,6 @@ site1
 .pytest_cache
 dbs
 temp
+chat
+.run
+node_modules

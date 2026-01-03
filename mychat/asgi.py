@@ -20,20 +20,16 @@ class MyConsumer(AsyncWebsocketConsumer):
       await self.accept()
 
       conv_id = self.scope['url_route']['kwargs']['conv_id']
-      user = self.scope['user']
-      group_name = f'user-{user.id}-{conv_id}'
+      self.user = self.scope['user']
+      self.peer = await self.get_peer(conv_id, self.user.id)
+      group_name = f'user-{self.user.id}-{conv_id}'
       await self.channel_layer.group_add(group_name, self.channel_name)
-      await self.get_state(conv_id, user.id)
+
       print(f'[*] 监听对话消息, "{group_name}"')
 
-   async def get_state(self, conv_id, user_id):
-      state = await UserConvState.objects.select_related('user', 'peer').aget(user_id=user_id, conv_id=conv_id)
-      self.state = dict(
-         user_id = state.user.id,
-         user_avatar_url = state.user.avatar_url,
-         peer_id = state.peer.id,
-         peer_avatar_url=state.peer.avatar_url,
-      )
+   async def get_peer(self, conv_id, user_id):
+      state = await UserConvState.objects.select_related('peer').aget(user_id=user_id, conv_id=conv_id)
+      return state.peer
 
    async def receive(self, text_data=None, bytes_data=None):
       pass
@@ -45,7 +41,7 @@ class MyConsumer(AsyncWebsocketConsumer):
    async def message(self, event):
       data = event['data']
       ctx = dict(
-         **self.state, **data
+         **data, sender_avatar_url = self.peer.avatar.url,
       )
       html = render_to_string('mychat/partials/message.html', ctx)
       await self.send(text_data=html)

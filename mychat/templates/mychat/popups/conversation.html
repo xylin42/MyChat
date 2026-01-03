@@ -1,28 +1,79 @@
 {% extends "mychat/popups/base.html" %}
-{% load user_tags %}
 
 {% block popup_title %} {{ peer.display_name }} {% endblock %}
 {% block back_url %} /conversations {% endblock %}
 
+{% block popup_content_styles %} my-5 {% endblock %}
 {% block popup_content %}
-   <ul id="messages">
-      {% for msg in messages %}
-         <li>
-            {% with user_id=user.id user_avatar_url=user.avatar.url peer_id=peer.id peer_avatar_url=peer.avatar.url body=msg.body %}
-               {% include "mychat/partials/message.html" %}
-            {% endwith %}
-         </li>
-      {% endfor %}
-   </ul>
-   <form action="/messages" method="post" class="flex mt-5 gap-3 items-center">
+   <div id="message-container" class="h-full">
+      <ul id="message-list" class="h-full overflow-y-auto">
+         {% for msg in messages %}
+            <li class="py-2">
+               {% with sender_id=msg.sender_id sender_avatar_url=msg.sender.avatar.url body=msg.body %}
+                  {% include "mychat/partials/message.html" %}
+               {% endwith %}
+            </li>
+         {% endfor %}
+      </ul>
+   </div>
+{% endblock %}
+
+{% block popup_bottom %}
+   <form id="message-form" action="/conversations/{{ state.conv.id }}/messages" method="post"
+         class="flex gap-3 items-center">
+      {% csrf_token %}
+      <input type="hidden" name="recipient_id" value="{{ state.peer.id }}">
       <textarea
          id="message-input"
          rows="1"
-         name="text" class="text-area resize-none w-full p-2 focus:outline-none rounded-md"></textarea>
-      <iconify-icon icon="mdi:send" class="text-2xl"></iconify-icon>
-      <iconify-icon icon="mdi:emoji" class="text-2xl"></iconify-icon>
+         name="body" class="text-area resize-none w-full p-2 focus:outline-none rounded-md"></textarea>
+      <button type="submit">
+         <iconify-icon icon="mdi:send" class="text-2xl cursor-pointer"></iconify-icon>
+      </button>
+      <iconify-icon icon="mdi:emoji" class="text-2xl cursor-pointer"></iconify-icon>
    </form>
+
    <script>
+       const popup = document.getElementById('popup')
+       const form = document.getElementById('message-form')
+       const textarea = document.getElementById('message-input')
+       const ul = document.getElementById('message-list')
+
+       popup.scrollTop = popup.scrollHeight
+
+       textarea.oninput = function (e) {
+           textarea.style.height = "auto"
+           textarea.style.height = textarea.scrollHeight + "px"
+       }
+
+       textarea.onkeydown = function (e) {
+           if (e.key === 'Enter' && !e.shiftKey) {
+               e.preventDefault()
+               form.requestSubmit()
+               textarea.value = ""
+               textarea.style.height = "auto"
+           }
+       }
+
+       function appendMessage(html) {
+           const li = document.createElement('li')
+           li.innerHTML = html
+           ul.appendChild(li)
+           ul.scrollTop = ul.scrollHeight
+       }
+
+       document.getElementById('message-form').onsubmit = function (e) {
+           e.preventDefault()
+           const formData = new FormData(this)
+           fetch(this.action, {
+               method: 'post',
+               body: formData,
+           }).then(res => {
+               res.text().then(html => {
+                   appendMessage(html)
+               })
+           })
+       }
        const ws = new WebSocket('/ws/conversations/{{ state.conv.id }}/')
        const state = {
            'conv_id': {{ state.conv_id }},
@@ -32,16 +83,11 @@
            'peer_avatar_url': "{{ state.peer.avatar.url }}"
        }
 
-       ws.onopen = (e) => {
-           // ws.send(JSON.stringify(state))
-       }
        ws.onmessage = (e) => {
-           // const data = JSON.parse(e.data)
            console.log('[新消息] data=', e.data)
-           const ul = document.getElementById('messages')
-           const li = document.createElement('li')
-           li.innerHTML = e.data
-           ul.appendChild(li)
+           appendMessage(e.data)
        }
    </script>
 {% endblock %}
+
+

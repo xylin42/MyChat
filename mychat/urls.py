@@ -3,6 +3,7 @@ import json
 import time
 
 from channels.generic.http import AsyncHttpConsumer
+from django import forms
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
@@ -13,13 +14,16 @@ from django.db.models import Count, Q
 from django.forms import BoundField
 from django.forms.renderers import DjangoTemplates
 from django.forms.widgets import Input
-from django.http import StreamingHttpResponse
+from django.http import StreamingHttpResponse, HttpResponse
 from django.shortcuts import render, get_object_or_404
+from django.template.loader import render_to_string
 from django.urls import path, include
 from django.utils.decorators import method_decorator
 from django.views import View
-from django.views.generic import ListView, TemplateView, DetailView
+from django.views.decorators.csrf import csrf_exempt
+from django.views.generic import ListView, TemplateView, DetailView, CreateView, FormView
 
+from .messages import send_message
 from .models import Contact, User, Conversation, Message, UserConvState
 
 
@@ -96,12 +100,20 @@ class EntryView(View):
 
 class ConversationListView(ListView):
    template_name = 'mychat/app/conversations.html'
-   context_object_name = 'conversation_states'
+   context_object_name = 'states'
 
    def get_queryset(self):
       qs = (UserConvState.objects.filter(user_id=self.request.user.id)
             .select_related("conv", "conv__last_msg", "user", "peer"))
       return qs
+
+   def get_context_data(self, **kwargs):
+      context = super().get_context_data(**kwargs)
+      context.update(
+         total_unread=sum(state.unread for state in context['states'])
+      )
+      return context
+
 
 class ConversationDetailView(DetailView):
    model = UserConvState
@@ -122,14 +134,33 @@ class ConversationDetailView(DetailView):
       data['peer'] = state.peer
       return data
 
+@method_decorator(csrf_exempt, 'dispatch')
+class ConversationMessageCreateView(FormView):
+   class _Form(forms.Form):
+      recipient_id = forms.IntegerField()
+      body = forms.CharField(max_length=150)
+
+   form_class = _Form
+
+   def form_valid(self, form):
+      data = form.cleaned_data
+      data['conv_id'] = self.kwargs['pk']
+      data['sender_id'] = self.request.user.id
+
+      context = send_message(**data)
+      context['user'] = self.request.user
+      res = render_to_string("mychat/partials/message.html", context)
+      return HttpResponse(res)
+
+# x=1
 urlpatterns = [
-   path('chatroom', TemplateView.as_view(template_name='chatroom.html')),
-   #path('messages', messages),
-   path('chat/', include('chat.urls')),
+   path("__reload__/", include("django_browser_reload.urls")),
+   path("icons/", include("dj_iconify.urls")),
 
    path('', EntryView.as_view()),
    path('conversations', ConversationListView.as_view()),
    path('conversations/<int:pk>', ConversationDetailView.as_view()),
+   path('conversations/<int:pk>/messages', ConversationMessageCreateView.as_view()),
    path('profile', UserProfileView.as_view()),
    path('contacts', ContactListView.as_view()),
    path('contacts/add', AddContactView.as_view()),

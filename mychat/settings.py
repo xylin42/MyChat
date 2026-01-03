@@ -1,3 +1,13 @@
+ICONIFY_JSON_ROOT = "node_modules/@iconify/json"
+
+USE_TZ = True
+TIME_ZONE = 'Asia/Shanghai'
+
+ALLOWED_HOSTS = [
+   '127.0.0.1',
+   'frp.foxhank.top'
+]
+
 CHANNEL_LAYERS = {
    'default': {
       'BACKEND': 'channels_redis.core.RedisChannelLayer',
@@ -30,13 +40,16 @@ INSTALLED_APPS = [
    'django.contrib.messages',
    'django.contrib.staticfiles',
    'mychat',
+   'dj_iconify.apps.DjIconifyConfig',
+   'django_browser_reload'
 ]
 
 MIDDLEWARE = [
+   "django_browser_reload.middleware.BrowserReloadMiddleware",
    'django.contrib.sessions.middleware.SessionMiddleware',
    'django.contrib.auth.middleware.AuthenticationMiddleware',
 
-   #'mychat.middleware.LoginRequiredMiddleware',
+   'mychat.middleware.LoginRequiredMiddleware',
 
    'django.middleware.csrf.CsrfViewMiddleware',
    'django.contrib.messages.middleware.MessageMiddleware'

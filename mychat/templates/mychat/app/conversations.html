@@ -1,10 +1,10 @@
 {% extends "mychat/app/base.html" %}
 
-{% block app_title %} 消息({{ unread }}) {% endblock %}
+{% block app_title %} 消息({{ total_unread }}) {% endblock %}
 
 {% block app_content %}
    <ul class="divide-y divide-gray-200">
-      {% for state in conversation_states %}
+      {% for state in states %}
          <li class="py-2 hover:bg-gray-200">
             <a href="/conversations/{{ state.conv.id }}" class="flex">
                <div class="indicator">

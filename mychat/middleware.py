@@ -7,9 +7,12 @@ class LoginRequiredMiddleware:
 
    def __call__(self, req):
       if not req.user.is_authenticated:
+         if req.path == '/login':
+            return self.get_response(req)
+
          return redirect('/login')
 
       if req.path == '/':
-         return redirect('/messages')
+         return redirect('/conversations')
 
       return self.get_response(req)

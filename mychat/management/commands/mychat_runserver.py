@@ -9,12 +9,16 @@ from mychat.messages import send_message, start_conversation
 from mychat.models import Contact, User, Message, Conversation
 
 
-def avatar_yelling_cat():
-   bs = open('data/yellingcat@192.webp', 'rb').read()
+def wizard_avatar(i):
+   bs = open(f'data/wizards/wizard_{i}.png', 'rb').read()
    return ContentFile(bs, 'avatar')
 
-def avatar_yelling_woman():
-   bs = open('data/yellingwoman@192.webp', 'rb').read()
+def user_avatar():
+   bs = open('data/bear.png', 'rb').read()
+   return ContentFile(bs, 'avatar')
+
+def peer_avatar():
+   bs = open('data/cat.png', 'rb').read()
    return ContentFile(bs, 'avatar')
 
 def fixed_salt():
@@ -45,7 +49,7 @@ def insert_messages():
 def insert_users_data():
    password = make_password('123456', fixed_salt())
    for i in range(1,5):
-      avatar = avatar_yelling_cat() if i == 1 else avatar_yelling_woman()
+      avatar = wizard_avatar(i)
       User.objects.create(
          username=f'user{i}',
          display_name=f"用户{i}",

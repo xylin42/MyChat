@@ -1,9 +1,8 @@
-<div class="chat {% if peer_id != user_id %} chat-start {% else %} chat-end {% endif %}">
-   {{ user_id }}-{{ peer_id }}
-   {% if peer_id != user_id %}
-      {% include "mychat/partials/avatar.html" with avatar_url=peer_avatar_url extra_classes="chat-image" %}
+<div class="chat {% if sender_id != user.id %} chat-start {% else %} chat-end {% endif %}">
+   {% if sender_id != user.id %}
+      {% include "mychat/partials/avatar.html" with avatar_url=sender_avatar_url extra_classes="chat-image" %}
    {% else %}
-      {% include "mychat/partials/avatar.html" with avatar_url=user_avatar_url extra_classes="chat-image" %}
+      {% include "mychat/partials/avatar.html" with avatar_url=user.avatar.url extra_classes="chat-image" %}
    {% endif %}
    <div class="chat-bubble">{{ body }}</div>
 </div>
