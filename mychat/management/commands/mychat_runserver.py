@@ -1,24 +1,36 @@
 import os
+import shutil
+from pathlib import Path
 
-from channels.layers import get_channel_layer
 from django.contrib.auth.hashers import make_password, get_hasher
+from django.core.cache import cache
 from django.core.files.base import ContentFile
 from django.core.management import BaseCommand, call_command
+from django.urls import resolve
 
-from mychat.messages import send_message, start_conversation
-from mychat.models import Contact, User, Message, Conversation
+from mychat.models import Friendship, User
+from mychat.services.conversation import get_unique_conversation, send_message
+from mychat.utils import image_to_jpeg
 
+
+def wizards_jpeg():
+   try:
+      shutil.rmtree('data/wizards_jpeg')
+   except FileNotFoundError:
+      pass
+   dstdir = Path('data/wizards_jpeg')
+   dstdir.mkdir()
+   srcdir = Path('data/wizards')
+   for p in srcdir.iterdir():
+      dstpath = dstdir / p.name
+      with dstpath.open('wb') as f:
+         bs = image_to_jpeg(p)
+         f.write(bs.getvalue())
 
 def wizard_avatar(i):
-   bs = open(f'data/wizards/wizard_{i}.png', 'rb').read()
-   return ContentFile(bs, 'avatar')
-
-def user_avatar():
-   bs = open('data/bear.png', 'rb').read()
-   return ContentFile(bs, 'avatar')
-
-def peer_avatar():
-   bs = open('data/cat.png', 'rb').read()
+   if i > 4:
+      i -= 4
+   bs = open(f'data/wizards_jpeg/wizard_{i}.png', 'rb').read()
    return ContentFile(bs, 'avatar')
 
 def fixed_salt():
@@ -37,7 +49,7 @@ def insert_messages():
    user = User.objects.get(pk=1)
    for i in range(2,5):
       peer = User.objects.get(pk=i)
-      conv, created = Conversation.objects.get_or_create_by_id_pair((user.id, peer.id))
+      conv, created = get_unique_conversation(user.id, peer.id)
 
       for j in range(3):
          send_message(conv.id, peer.id, user.id, f"[{j}] 你好，{user.display_name}")
@@ -48,7 +60,7 @@ def insert_messages():
 
 def insert_users_data():
    password = make_password('123456', fixed_salt())
-   for i in range(1,5):
+   for i in range(1, 6):
       avatar = wizard_avatar(i)
       User.objects.create(
          username=f'user{i}',
@@ -57,36 +69,27 @@ def insert_users_data():
          avatar=avatar,
       )
 
-def insert_contacts_data():
-   for i in range(1,4):
-      x = Contact.objects.create(
-         user_id=1,
-         contact_id=i,
-         remark=f'朋友{i}'
-      )
+def insert_friends_data():
+   for i in range(2, 5):
+      Friendship.objects.create(user_id=1, friend_id=i, remark=f'朋友{i}')
+      Friendship.objects.create(user_id=i, friend_id=1, remark=f'朋友{i}')
 
-def test_channels_layer():
-   from asgiref.sync import async_to_sync
-
-   channel_layer = get_channel_layer()
-
-   async_to_sync(channel_layer.send)('test_channel', dict(type='hello'))
-   x = async_to_sync(channel_layer.receive)('test_channel')
-
-   assert x == dict(type='hello')
-
-   #async_to_sync(channel_layer.flush)()
 
 
 class Command(BaseCommand):
    def handle(self, *args, **options):
       if os.environ.get('RUN_MAIN') != 'true':
+         cache.set('mykey1', '123')
+         with cache._cache.get_client(write=True).lock('xx'):
+            x = 1
+
          call_command('migrate_mychat')
 
+         wizards_jpeg()
+
          insert_users_data()
-         insert_contacts_data()
+         insert_friends_data()
          insert_messages()
 
-         test_channels_layer()
 
       call_command('runserver')

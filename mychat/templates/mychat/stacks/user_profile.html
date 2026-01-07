@@ -1,0 +1,40 @@
+{% extends page_layout %}
+
+{% block stack_content %}
+   <script>
+   function scheduleModalClose(data) {
+       console.log('schedule modal关闭操作')
+       setTimeout(function(){
+           console.log("回调函数调用", data)
+           data.showModal=false
+       }, 2000)
+   }
+   </script>
+   {% include "mychat/partials/stack_header.html" with stack_title="用户资料" %}
+   <div class="bg-gray-100 py-2 px-4 flex flex-col" x-data="{ showModal: false, loading: false, finished: false }">
+      {% include "mychat/partials/user_card.html" with user=target_user %}
+      <form hx-post="/friend-requests/create" hx-trigger="submit" hx-swap="none"
+            @htmx:before-request.camel="loading=showModal=true"
+            @htmx:after-request.camel="finished=true; loading=false"
+            @htmx:response-error.camel=""
+      >
+         {% csrf_token %}
+         <input hidden name="user1" value="{{ target_user.id }}">
+         <input hidden name="user2" value="{{ user.id }}">
+         <button class="btn mt-5">添加好友</button>
+      </form>
+      <dialog id="process-modal" class="modal" :class="showModal && 'modal-open'"
+      >
+         <div class="modal-box w-fit">
+            <span class="loading loading-spinner" x-show="loading"></span>
+            <div class="flex flex-col items-center" x-show="finished"
+                 x-init="$watch('finished', (v) => { if(v){ finished=false; scheduleModalClose($data) } })"
+                 x-transition.opacity.duration.2000ms
+            >
+               <span class="icon-[mdi--check-circle] text-2xl mb-2"></span>
+               <span>已发送请求</span>
+            </div>
+         </div>
+      </dialog>
+   </div>
+{% endblock %}

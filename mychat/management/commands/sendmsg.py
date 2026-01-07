@@ -2,8 +2,8 @@ from datetime import datetime
 
 from django.core.management import BaseCommand
 
-from mychat.messages import send_message
 from mychat.models import User, Conversation
+from mychat.services.conversation import send_message
 
 
 class Command(BaseCommand):

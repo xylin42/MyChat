@@ -1,0 +1,9 @@
+<div class="flex items-center gap-4">
+   <div>
+      {% include "mychat/partials/avatar.html" with avatar_url=user.avatar.url %}
+   </div>
+   <div class="flex flex-col">
+      <span class="text-bold text-lg">{{ user.display_name }}</span>
+      <span class="text-sm">ID: {{ user.username }}</span>
+   </div>
+</div>

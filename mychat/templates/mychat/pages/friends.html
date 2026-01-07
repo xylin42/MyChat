@@ -1,0 +1,23 @@
+{% extends page_layout %}
+
+{% block shell_content %}
+   <header class="text-center text-lg bg-gray-100">通讯录</header>
+
+   <div class="flex justify-end mt-4">
+      <span class="icon-[mdi--add] text-xl" hx-get="/users/search" hx-target="#body-content" hx-push-url="true"></span>
+   </div>
+   <div class="hover:bg-gray-200 flex gap-2 py-2">
+      <span class="icon-[mdi--account-add] text-xl"></span>
+      <span>新的朋友</span>
+   </div>
+   <hr class="my-2">
+   <ul class="divide-y divide-gray-300">
+      {% for f in friends %}
+         <li class="py-2 hover:bg-gray-200" hx-get="/friends/{{ f.friend.id }}/profile"
+             hx-target="#body-content" hx-push-url="true">
+            {% include "mychat/partials/avatar.html" with avatar_url=f.friend.avatar.url %}
+            {{ f.remark }}
+         </li>
+      {% endfor %}
+   </ul>
+{% endblock %}

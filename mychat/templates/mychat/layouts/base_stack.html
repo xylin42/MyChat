@@ -1,0 +1,15 @@
+{% extends base_layout %}
+
+{% block body_content %}
+   <div id="stack" class="w-70 mx-auto h-screen overflow-hidden flex flex-col py-5">
+      <div id="stack-content" class="flex-1 min-h-0 {% block stack_content_styles %}{% endblock %}">
+         {% block stack_content %}
+         {% endblock %}
+      </div>
+
+      <div class="">
+         {% block stack_bottom %}
+         {% endblock %}
+      </div>
+   </div>
+{% endblock %}

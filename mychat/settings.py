@@ -1,9 +1,60 @@
-ICONIFY_JSON_ROOT = "node_modules/@iconify/json"
+CACHES = {
+   'default': {
+      'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+      'LOCATION': 'redis://localhost:6379',
+      'OPTIONS': {
+         # 'CLIENT_CLASS': 'django_redis.client.DefaultClient'
+      }
+   }
+}
+
+INSTALLED_APPS = [
+   'daphne',
+   'django_eventstream',
+   'django_browser_reload',
+
+   'django.contrib.admin',
+   'django.contrib.auth',
+   'django.contrib.contenttypes',
+   'django.contrib.sessions',
+   'django.contrib.messages',
+   'django.contrib.staticfiles',
+
+   'mychat',
+]
+
+MIDDLEWARE = [
+   "django_browser_reload.middleware.BrowserReloadMiddleware",
+
+   'django.contrib.sessions.middleware.SessionMiddleware',
+   'django.contrib.auth.middleware.AuthenticationMiddleware',
+
+   'mychat.middleware.LoginRequiredMiddleware',
+
+   'django.middleware.csrf.CsrfViewMiddleware',
+   'django.contrib.messages.middleware.MessageMiddleware'
+]
+
+from .conf.dj_iconify import * # NOQA
+
+EVENTSTREAM_REDIS = {
+   'host': 'localhost',
+   'port': 6379,
+   'db': 0,
+}
 
 USE_TZ = True
 TIME_ZONE = 'Asia/Shanghai'
 
+CSRF_TRUSTED_ORIGINS = [
+   "http://localhost:8080",
+   "http://127.0.0.1:8080",
+   'http://frp.foxhank.top:31894',
+   'http://192.168.31.149:8000'
+]
+
 ALLOWED_HOSTS = [
+   '192.168.31.149',
    '127.0.0.1',
    'frp.foxhank.top'
 ]
@@ -28,32 +79,6 @@ AUTH_USER_MODEL = 'mychat.User'
 LOGIN_URL = '/login'
 DEBUG = True
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-INSTALLED_APPS = [
-   'daphne',
-   #'chat',
-
-   'django.contrib.admin',
-   'django.contrib.auth',
-   'django.contrib.contenttypes',
-   'django.contrib.sessions',
-   'django.contrib.messages',
-   'django.contrib.staticfiles',
-   'mychat',
-   'dj_iconify.apps.DjIconifyConfig',
-   'django_browser_reload'
-]
-
-MIDDLEWARE = [
-   "django_browser_reload.middleware.BrowserReloadMiddleware",
-   'django.contrib.sessions.middleware.SessionMiddleware',
-   'django.contrib.auth.middleware.AuthenticationMiddleware',
-
-   'mychat.middleware.LoginRequiredMiddleware',
-
-   'django.middleware.csrf.CsrfViewMiddleware',
-   'django.contrib.messages.middleware.MessageMiddleware'
-]
 
 ROOT_URLCONF = 'mychat.urls'
 
@@ -82,6 +107,9 @@ TEMPLATES = [
             'django.contrib.auth.context_processors.auth',
             'django.contrib.messages.context_processors.messages',
          ],
+         'builtins': [
+            'mychat.templatetags.defaulttags',
+         ]
       },
    },
 ]

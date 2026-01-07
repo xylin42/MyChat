@@ -1,0 +1,26 @@
+{% extends page_layout %}
+
+{% block shell_content %}
+
+<header class="text-center text-lg bg-gray-100">消息({{ total_unread }})</header>
+<ul class="divide-y divide-gray-200 mt-4">
+   {% for state in states %}
+      <li class="py-2 hover:bg-gray-200">
+         <a href="/conversations/{{ state.conv.id }}" class="flex">
+            <div class="indicator">
+               <span class="indicator-item badge badge-secondary badge-xs">{{ state.unread }}</span>
+               {% include "mychat/partials/avatar.html" with avatar_url=state.peer.avatar.url %}
+            </div>
+            <div class="flex flex-col ml-3">
+               <span>{{ state.friend.remark }}</span>
+               <span>{{ state.conv.last_msg.payload }}</span>
+            </div>
+            <div class="ml-auto">
+               <span>{{ state.conv.last_msg.created_at|date:"H:i" }}</span>
+            </div>
+         </a>
+      </li>
+   {% endfor %}
+</ul>
+
+{% endblock %}

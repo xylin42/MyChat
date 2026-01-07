@@ -1,10 +1,10 @@
-{% extends "mychat/popups/base.html" %}
+{% extends "mychat/layouts/base_stack.html" %}
 
-{% block popup_title %} {{ peer.display_name }} {% endblock %}
+{% block stack_title %} {{ peer.display_name }} {% endblock %}
 {% block back_url %} /conversations {% endblock %}
 
-{% block popup_content_styles %} my-5 {% endblock %}
-{% block popup_content %}
+{% block stack_content_styles %} my-5 {% endblock %}
+{% block stack_content %}
    <div id="message-container" class="h-full">
       <ul id="message-list" class="h-full overflow-y-auto">
          {% for msg in messages %}
@@ -18,7 +18,7 @@
    </div>
 {% endblock %}
 
-{% block popup_bottom %}
+{% block stack_bottom %}
    <form id="message-form" action="/conversations/{{ state.conv.id }}/messages" method="post"
          class="flex gap-3 items-center">
       {% csrf_token %}
@@ -26,20 +26,19 @@
       <textarea
          id="message-input"
          rows="1"
-         name="body" class="text-area resize-none w-full p-2 focus:outline-none rounded-md"></textarea>
-      <button type="submit">
-         <iconify-icon icon="mdi:send" class="text-2xl cursor-pointer"></iconify-icon>
+         name="body" class="text-area resize-none w-full p-2 focus:outline-none rounded-md border-1 border-solid border-gray-300"></textarea>
+      <button class="i-mdi-send">
       </button>
-      <iconify-icon icon="mdi:emoji" class="text-2xl cursor-pointer"></iconify-icon>
+      <button class="i-mdi-emoji text-2xl"></button>
    </form>
 
    <script>
-       const popup = document.getElementById('popup')
+       const stack = document.getElementById('stack')
        const form = document.getElementById('message-form')
        const textarea = document.getElementById('message-input')
        const ul = document.getElementById('message-list')
 
-       popup.scrollTop = popup.scrollHeight
+       stack.scrollTop = stack.scrollHeight
 
        textarea.oninput = function (e) {
            textarea.style.height = "auto"

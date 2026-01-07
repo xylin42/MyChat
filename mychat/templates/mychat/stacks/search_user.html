@@ -1,0 +1,42 @@
+{% extends page_layout %}
+
+{% block stack_content %}
+   <header class="flex items-center mt-2">
+      <a class="icon-[mdi--chevron-left] text-2xl" hx-get="/friends" hx-target="#body-content" hx-push-url="true"></a>
+      <span class="flex-1 text-center">添加好友</span>
+      <div class="w-10"></div>
+   </header>
+
+   <div id="search-container"
+        x-data="{ search: '{{ request.GET.username }}', loading: false, found: false, finished: false }"
+        class="mt-5 ml-5">
+      <form hx-get="/users/search" hx-target="#search-result"
+            hx-trigger="submit"
+            hx-replace-url="true"
+            @htmx:before-request.camel="loading=true"
+            @htmx:after-request.camel="loading=false; finished=true"
+            @htmx:response-error.camel="found=false"
+      >
+         <label class="input">
+            <span class="icon-[mdi--search] text-lg"></span>
+            <input type="text" name="username" x-model="search" class="text-lg" @input="found=finished=false">
+         </label>
+
+         <div class="mt-3 bg-base-200 pl-2 py-2" x-show="search.trim() !== ''">
+            <button type="submit" x-show="search.trim() !== '' && !loading && !finished" class="w-full flex items-center"
+                 id="search-prompt">
+               <span class="icon-[mdi--account-add] text-2xl"></span>
+               <span class="pl-2">搜索: <span x-text="search"></span></span>
+            </button>
+
+            <div class="flex justify-center" x-show="loading">
+               <div class="icon-[line-md--loading-twotone-loop] text-3xl"></div>
+            </div>
+
+            <div x-show="finished && !found" id="search-result">
+               找不到用户: <span x-text="search"></span>
+            </div>
+         </div>
+      </form>
+   </div>
+{% endblock %}

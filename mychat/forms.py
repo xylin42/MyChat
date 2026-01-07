@@ -1,6 +1,10 @@
 from django import forms
 from .models import User
 
+class UniqueUserPairForm(forms.Form):
+   user1 = forms.IntegerField()
+   user2 = forms.IntegerField()
+
 class BaseProfileForm(forms.ModelForm):
     class Meta:
         model = User

@@ -1,21 +1,14 @@
-import asyncio
-import json
 import os
-from datetime import datetime
 
-from channels.auth import AuthMiddlewareStack
-from channels.generic.http import AsyncHttpConsumer
-from channels.generic.websocket import AsyncWebsocketConsumer
-from channels.routing import ProtocolTypeRouter, URLRouter
 from django.core.asgi import get_asgi_application
 from django.template.loader import render_to_string
 from django.urls import re_path
 
-from mychat.models import UserConvState
+from mychat.models import ConversationState
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'mychat.settings')
 
-class MyConsumer(AsyncWebsocketConsumer):
+class MyConsumer():
    async def connect(self):
       await self.accept()
 
@@ -28,7 +21,7 @@ class MyConsumer(AsyncWebsocketConsumer):
       print(f'[*] 监听对话消息, "{group_name}"')
 
    async def get_peer(self, conv_id, user_id):
-      state = await UserConvState.objects.select_related('peer').aget(user_id=user_id, conv_id=conv_id)
+      state = await ConversationState.objects.select_related('peer').aget(user_id=user_id, conv_id=conv_id)
       return state.peer
 
    async def receive(self, text_data=None, bytes_data=None):
@@ -47,13 +40,4 @@ class MyConsumer(AsyncWebsocketConsumer):
       await self.send(text_data=html)
 
 
-application = ProtocolTypeRouter(
-   {
-      'http': get_asgi_application(),
-      'websocket': AuthMiddlewareStack(URLRouter(
-         [
-            re_path(r'^ws/conversations/(?P<conv_id>\w+)/$', MyConsumer.as_asgi())
-         ]
-      ))
-   }
-)
+application = get_asgi_application()

@@ -1,0 +1,37 @@
+{
+  "name": "csrf-test",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev:css": "@tailwindcss/cli -i ./static/src/css/input.css -o ./static/dist/output.css --watch",
+    "dev:js": "node esbuild.config.js",
+    "dev": "npm-run-all -p dev:css dev:js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.26.0",
+  "dependencies": {
+    "@tailwindcss/cli": "^4.1.18",
+    "alpinejs": "^3.15.3",
+    "htmx.org": "^2.0.8",
+    "tailwindcss": "^4.1.18"
+  },
+  "devDependencies": {
+    "@ameinhardt/unocss-preset-daisy": "^1.1.8",
+    "@iconify-json/line-md": "^1.2.13",
+    "@iconify-json/mdi": "^1.2.3",
+    "@iconify/tailwind4": "^1.2.0",
+    "@tailwindcss/vite": "^4.1.18",
+    "@unocss/preset-icons": "^66.5.12",
+    "@unocss/preset-wind4": "^66.5.12",
+    "@unocss/reset": "^66.5.12",
+    "daisyui": "^5.1.31",
+    "esbuild": "^0.27.2",
+    "iconify-icon": "^3.0.2",
+    "unocss": "^66.5.12",
+    "vite": "^7.3.0"
+  }
+}
