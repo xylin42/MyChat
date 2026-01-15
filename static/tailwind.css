@@ -1,0 +1,10 @@
+@import "tailwindcss";
+
+@source "../mychat/templates/**/*.html";
+
+@plugin "@iconify/tailwind4";
+@plugin "daisyui";
+
+
+@source inline("icon-[mdi--message]");
+@source inline("icon-[mdi--account-details]");

@@ -1,7 +1,6 @@
 .venv
 data
 media
-static
 site1
 .idea
 .pytest_cache
@@ -10,3 +9,4 @@ temp
 chat
 .run
 node_modules
+static/dist
