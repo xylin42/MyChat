@@ -1,23 +1,35 @@
 {% extends page_layout %}
 
 {% block shell_content %}
+
    <header class="text-center text-lg bg-gray-100">通讯录</header>
 
    <div class="flex justify-end mt-4">
       <span class="icon-[mdi--add] text-xl" hx-get="/users/search" hx-target="#body-content" hx-push-url="true"></span>
    </div>
-   <div class="hover:bg-gray-200 flex gap-2 py-2">
+   <div class="hover:bg-gray-200 flex gap-2 py-2 cursor-pointer"
+        hx-get="/friend-requests" hx-target="#body-content"
+        hx-push-url="true"
+   >
       <span class="icon-[mdi--account-add] text-xl"></span>
-      <span>新的朋友</span>
+      <div class="indicator pr-3">
+         <span class="indicator-item badge badge-secondary badge-xs"
+               x-data
+               x-text="$store.userState.unread_friend_requests"
+               @click="console.log($store.userState.unread_friend_requests)"></span>
+         <span>新的朋友</span>
+      </div>
    </div>
    <hr class="my-2">
    <ul class="divide-y divide-gray-300">
-      {% for f in friends %}
-         <li class="py-2 hover:bg-gray-200" hx-get="/friends/{{ f.friend.id }}/profile"
+      <template x-data x-for="friend in mychat.friendStore.friends">
+         <li class="py-2 hover:bg-gray-200" :hx-get="`/friends/${friend.id}/profile`"
              hx-target="#body-content" hx-push-url="true">
-            {% include "mychat/partials/avatar.html" with avatar_url=f.friend.avatar.url %}
-            {{ f.remark }}
+            {% include "mychat/partials/avatar.html" with src=":src='friend.avatar_url'" %}
+            <span x-text="friend.remark"></span>
          </li>
-      {% endfor %}
+      </template>
    </ul>
+
+   {% include "mychat/partials/user_state_script.html" %}
 {% endblock %}

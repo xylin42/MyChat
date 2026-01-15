@@ -1,8 +1,6 @@
 import json
-import time
-from urllib.parse import urlparse, urlsplit, urlunsplit
+from urllib.parse import urlsplit, urlunsplit
 
-import django_eventstream
 from django import forms
 from django.conf import settings
 from django.conf.urls.static import static
@@ -14,21 +12,21 @@ from django.db import IntegrityError
 from django.forms import BoundField
 from django.forms.renderers import DjangoTemplates
 from django.forms.widgets import Input
-from django.http import HttpResponse, Http404
+from django.http import HttpResponse, QueryDict
 from django.shortcuts import render, get_object_or_404
 from django.template.loader import render_to_string
-from django.urls import path, include, reverse
+from django.urls import path, include
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
-from django.views.generic import ListView, TemplateView, DetailView, FormView, CreateView
-from django.views.generic.edit import FormMixin, ProcessFormView, BaseFormView
+from django.views.generic import ListView, TemplateView, DetailView, FormView
+from django.views.generic.edit import BaseFormView
 
 from .events import user_event
-from .forms import UniqueUserPairForm
-from .models import Friendship, User, ConversationState, FriendRequest
-from .services.conversation import send_message
+from .models import Friendship, User, UserConvState, FriendRequest
+from .services.conversation import send_message, UserConvListCache
 from .services.friendship import send_friend_request
+from .services.user_state import UserStateCache
 
 
 @login_required
@@ -55,26 +53,6 @@ class FormRenderer(DjangoTemplates):
    form_template_name = 'form.html'
    bound_field_class = BoundField
 
-
-class Logout(LogoutView):
-   template_name = 'logged_out.html'
-
-   def get_success_url(self):
-      return '/'
-
-
-class Login(LoginView):
-   template_name = 'mychat/auth/login.html'
-
-   def get_success_url(self):
-      return "/"
-
-   def get_form_kwargs(self):
-      kwargs = super().get_form_kwargs()
-      kwargs['renderer'] = FormRenderer()
-      return kwargs
-
-
 class HtmxMixin:
    def dispatch(self, request, *args, **kwargs):
       self.is_htmx = request.META.get('HTTP_HX_REQUEST') == 'true'
@@ -90,29 +68,80 @@ class HtmxMixin:
 
    def get_context_data(self, **kwargs):
       context = super().get_context_data(**kwargs)
-      url_name = self.request.resolver_match.url_name
       base_layout = 'mychat/layouts/base'
-      page_layout = ''
-      if url_name in ('conversation-list', 'contact-list', 'profile'):
-         page_layout = 'mychat/layouts/base_shell'
-      elif url_name in ('search-user', 'user-profile'):
-         page_layout = 'mychat/layouts/base_stack'
+      page_layout = f'mychat/layouts/base_{self.page_layout_type}'
+
       if self.is_htmx:
          base_layout += '_content'
+
          target = self.request.META.get('HTTP_HX_TARGET')
          if target != 'body-content':
             page_layout += '_content'
-         context['back_url'] = self.get_back_url()
-      if not page_layout:
-         raise Exception('PageLayoutMixin错误')
-      base_layout += '.html'
-      page_layout += '.html'
-      context['base_layout'] = base_layout
-      context['page_layout'] = page_layout
+
+
+      if base_layout:
+         context['base_layout'] = base_layout + '.html'
+
+      context['back_url'] = self.get_back_url()
+      context['page_layout'] = page_layout + '.html'
+      context['is_htmx'] = self.is_htmx
+
       return context
 
+class Logout(HtmxMixin, LogoutView):
+   template_name = 'logged_out.html'
 
-class FriendListView(HtmxMixin, ListView):
+   def get_success_url(self):
+      return '/'
+
+
+class Login(HtmxMixin, LoginView):
+   template_name = 'mychat/auth/login.html'
+
+   def get_success_url(self):
+      return "/"
+
+   def get_form_kwargs(self):
+      kwargs = super().get_form_kwargs()
+      kwargs['renderer'] = FormRenderer()
+      return kwargs
+
+
+class UserStateMixin:
+   def get_context_data(self):
+      context = super().get_context_data()
+      state = UserStateCache(self.request.user.id).get()
+      context['user_state'] = state
+      return context
+
+class FriendRequestUpdateView(View):
+   form = forms.modelform_factory(FriendRequest, fields=['status'])
+
+   def patch(self, request, pk, **kwarg):
+      data = QueryDict(request.body, encoding=request.encoding)
+      form = self.form(data)
+      if form.is_valid():
+         FriendRequest.objects.filter(pk=pk).update(
+            **form.cleaned_data
+         )
+      else:
+         pass
+
+
+class FriendRequestsListView(HtmxMixin, UserStateMixin, ListView):
+   page_layout_type = 'stack'
+   template_name = 'mychat/stacks/friend_requests.html'
+   model = FriendRequest
+   context_object_name = 'friend_requests'
+   default_back_url = '/friends'
+
+   def get_queryset(self):
+      return self.model.objects.filter(recipient_id = self.request.user.id).select_related('requester')
+
+class FriendListView(HtmxMixin,
+                     UserStateMixin,
+                     ListView):
+   page_layout_type = 'shell'
    template_name = 'mychat/pages/friends.html'
    model = Friendship
    context_object_name = 'friends'
@@ -158,31 +187,44 @@ class EntryView(View):
       return render(req, 'mychat/portal/portal.html')
 
 
-class ConversationListView(HtmxMixin, ListView):
+class ConversationListView(HtmxMixin,
+                           TemplateView):
+   page_layout_type = 'shell'
    template_name = 'mychat/pages/conversations.html'
-   context_object_name = 'states'
+   cookie_last_updated_at = 'conv_list_last_updated_at'
 
-   def get_queryset(self):
-      qs = (ConversationState.objects.filter(user_id=self.request.user.id)
-            .select_related("conv", "conv__last_msg", "user", "peer", "friend"))
-      return qs
+   def render_to_response(self, context, **response_kwargs):
+      resp = super().render_to_response(context, **response_kwargs)
+      # resp.set_cookie(self.cookie_last_updated_at, self.last_updated_at)
+      return resp
 
    def get_context_data(self, **kwargs):
       context = super().get_context_data(**kwargs)
-      context.update(
-         total_unread=12
-      )
-      return context
+      since = self.request.COOKIES.get(self.cookie_last_updated_at, None)
+      cache = UserConvListCache(self.request.user.id)
+      if not since:
+         states, friends, last_updated_at = cache.reload_all()
+         self.last_updated_at = last_updated_at
+         context['full_states'] = zip(states, friends)
+         context['states'] = states
+         context['friends'] = friends
+         context['is_full'] = True
+         return context
+      objs, last_updated_at = cache.get()
+      self.last_updated_at = last_updated_at
+      return list(objs)
+
+
 
 
 class ConversationDetailView(DetailView):
-   model = ConversationState
+   model = UserConvState
    context_object_name = 'state'
    template_name = 'mychat/stacks/conversation.html'
 
    def get_object(self, queryset=None):
       return get_object_or_404(
-         ConversationState, conv_id=self.kwargs['pk'], user_id=self.request.user.id,
+         UserConvState, conv_id=self.kwargs['pk'], user_id=self.request.user.id,
       )
 
    def get_context_data(self, **kwargs):
@@ -220,7 +262,10 @@ class UserProfileView(HtmxMixin, DetailView):
    context_object_name = 'target_user'
 
 class CreateFriendRequestView(BaseFormView):
-   form_class = UniqueUserPairForm
+   class Form(forms.Form):
+      requester = forms.IntegerField()
+      recipient = forms.IntegerField()
+   form_class = Form
 
    def form_valid(self, form):
       try:
@@ -232,6 +277,8 @@ class CreateFriendRequestView(BaseFormView):
 import django_eventstream.views
 
 urlpatterns = [
+   path('friend-requests', FriendRequestsListView.as_view()),
+   path('friend-requests/<int:pk>', FriendRequestUpdateView.as_view()),
    path('friend-requests/create', CreateFriendRequestView.as_view()),
    path(user_event.urlpattern, (django_eventstream.views.events), kwargs = {
       'format-channels': [user_event.channels_format]

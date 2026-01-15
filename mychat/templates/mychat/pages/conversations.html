@@ -1,26 +1,50 @@
 {% extends page_layout %}
 
 {% block shell_content %}
+   <header class="text-center text-lg bg-gray-100" x-data x-text="`消息(${mychat.chatStore.totalUnread})`"></header>
 
-<header class="text-center text-lg bg-gray-100">消息({{ total_unread }})</header>
-<ul class="divide-y divide-gray-200 mt-4">
-   {% for state in states %}
-      <li class="py-2 hover:bg-gray-200">
-         <a href="/conversations/{{ state.conv.id }}" class="flex">
-            <div class="indicator">
-               <span class="indicator-item badge badge-secondary badge-xs">{{ state.unread }}</span>
-               {% include "mychat/partials/avatar.html" with avatar_url=state.peer.avatar.url %}
-            </div>
-            <div class="flex flex-col ml-3">
-               <span>{{ state.friend.remark }}</span>
-               <span>{{ state.conv.last_msg.payload }}</span>
-            </div>
-            <div class="ml-auto">
-               <span>{{ state.conv.last_msg.created_at|date:"H:i" }}</span>
-            </div>
-         </a>
-      </li>
-   {% endfor %}
-</ul>
+   <ul class="divide-y divide-gray-200 mt-4" x-data
+       {% if is_full %} x-init="mychat.chatStore.loadFull()"
+       {% else %}       x-init="mychat.chatStore.loadPartial()" {% endif %}
+   >
+      <template x-for="conv in mychat.chatStore.conversations">
+         <li class="py-2 hover:bg-gray-200" x-data="{ friend: mychat.friendStore.getFriend(conv.friend_id) }">
+            <a :href="conv.url" class="flex">
+               <div class="indicator">
+                  <span class="indicator-item badge badge-secondary badge-xs" x-text="conv.unread"></span>
+                  <div class="avatar">
+                     <div class="rounded-full w-10 h-10">
+                        <img :src="friend.avatar_url" width="20" height="20"/>
+                     </div>
+                  </div>
+               </div>
+               <div class="flex flex-col ml-3">
+                  <span x-text="friend.remark"></span>
+                  <span x-text="conv.last_msg_preview" class="py-1"></span>
+               </div>
+               <div class="ml-auto">
+                  <span x-text="conv.last_msg_date"></span>
+               </div>
+            </a>
+         </li>
+      </template>
+   </ul>
+
+   {% if is_full %}
+      {{ states|json_script:"states" }}
+      {{ friends|json_script:"friends" }}
+   {% else %}
+      {{ partial_states|json_script:"partial_states" }}
+      <script type="module">
+          const convs = getConversationData()
+          const htmls = []
+          for (const conv of convs) {
+              const html = nunjucks.render('conversation_item.html', {conv: conv})
+              htmls.append(html)
+          }
+          const htmlText = htmls.join('')
+          document.getElementById('chat-list').innerHTML = htmlText
+      </script>
+   {% endif %}
 
 {% endblock %}

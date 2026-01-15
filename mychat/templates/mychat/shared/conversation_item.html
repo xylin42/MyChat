@@ -1,0 +1,13 @@
+<a href="{{ conv.url }}" class="flex">
+   <div class="indicator">
+      <span class="indicator-item badge badge-secondary badge-xs">{{ conv.unread }}</span>
+      {% include "mychat/shared/avatar.html" with avatar_url=friend.avatar_url %}
+   </div>
+   <div class="flex flex-col ml-3">
+      <span>{{ friend.remark }}</span>
+      <span>{{ conv.last_msg_preview }}</span>
+   </div>
+   <div class="ml-auto">
+      <span>{{ state.last_msg_date|date:"H:i" }}</span>
+   </div>
+</a>

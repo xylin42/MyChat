@@ -4,7 +4,7 @@ from django.core.asgi import get_asgi_application
 from django.template.loader import render_to_string
 from django.urls import re_path
 
-from mychat.models import ConversationState
+from mychat.models import UserConvState
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'mychat.settings')
 
@@ -21,7 +21,7 @@ class MyConsumer():
       print(f'[*] 监听对话消息, "{group_name}"')
 
    async def get_peer(self, conv_id, user_id):
-      state = await ConversationState.objects.select_related('peer').aget(user_id=user_id, conv_id=conv_id)
+      state = await UserConvState.objects.select_related('peer').aget(user_id=user_id, conv_id=conv_id)
       return state.peer
 
    async def receive(self, text_data=None, bytes_data=None):

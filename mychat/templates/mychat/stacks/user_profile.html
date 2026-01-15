@@ -19,8 +19,8 @@
             @htmx:response-error.camel=""
       >
          {% csrf_token %}
-         <input hidden name="user1" value="{{ target_user.id }}">
-         <input hidden name="user2" value="{{ user.id }}">
+         <input hidden name="requester" value="{{ user.id }}">
+         <input hidden name="recipient" value="{{ target_user.id }}">
          <button class="btn mt-5">添加好友</button>
       </form>
       <dialog id="process-modal" class="modal" :class="showModal && 'modal-open'"

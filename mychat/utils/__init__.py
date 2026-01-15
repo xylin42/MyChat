@@ -3,6 +3,16 @@ from io import BytesIO
 from PIL import Image, ImageOps
 from django.db import models
 
+def model_instance_subset(d, *keys):
+   r = {}
+   for key in keys:
+      if callable(key):
+         key, val = key(d)
+      else:
+         val = getattr(d, key)
+      r[key] = val
+   return r
+
 def image_to_jpeg(imgfile):
    img = Image.open(imgfile)
    img = ImageOps.exif_transpose(img)

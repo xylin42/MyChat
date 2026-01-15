@@ -1,3 +1,5 @@
+EVENTSTREAM_STORAGE_CLASS = 'django_eventstream.storage.DjangoModelStorage'
+
 CACHES = {
    'default': {
       'BACKEND': 'django.core.cache.backends.redis.RedisCache',
@@ -24,7 +26,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-   "django_browser_reload.middleware.BrowserReloadMiddleware",
+   # "django_browser_reload.middleware.BrowserReloadMiddleware",
 
    'django.contrib.sessions.middleware.SessionMiddleware',
    'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -73,8 +75,10 @@ ASGI_APPLICATION = 'mychat.asgi.application'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = 'media/'
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+
+STATIC_ROOT = 'static/'
 STATIC_URL = 'static/'
-FORM_RENDERER = 'django.forms.renderers.Jinja2'
+
 AUTH_USER_MODEL = 'mychat.User'
 LOGIN_URL = '/login'
 DEBUG = True
@@ -108,6 +112,7 @@ TEMPLATES = [
             'django.contrib.messages.context_processors.messages',
          ],
          'builtins': [
+            'django.templatetags.static',
             'mychat.templatetags.defaulttags',
          ]
       },

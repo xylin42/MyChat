@@ -16,26 +16,14 @@
 </head>
 <body>
 
-<div id="body-content" class="w-screen h-screen {% block content_styles %}{% endblock %}">
+<div id="body-content" class="w-screen h-screen {% block body_content_styles %}{% endblock %}">
    {% block body_content %}
    {% endblock %}
 </div>
+
 {% if request.user.is_authenticated %}
-   {% load static %}
-   <script src="{% static 'django_eventstream/eventsource.min.js' %}"></script>
-   <script src="{% static 'django_eventstream/reconnecting-eventsource.js' %}"></script>
    <script>
-       document.addEventListener('alpine:init', () => {
-           Alpine.store('user', {
-               unreadMessages: 0,
-               unreadFriendRequests: 0,
-           })
-       })
-       var es = new ReconnectingEventSource('{% url 'user-events' user.id %}')
-       es.addEventListener('friend-request-received', function (e) {
-           console.log(e);
-           Alpine.store('user').unreadFriendRequests += 1
-       }, false);
+      {% constants_to_client %}
    </script>
 {% endif %}
 </body>

@@ -1,0 +1,10 @@
+{% if is_htmx %}
+
+   {{ user_state|json_script:"user-state" }}
+
+   <script type="module">
+       const state = JSON.parse(document.getElementById('user-state').textContent)
+       Alpine.store('userState').update(state)
+   </script>
+
+{% endif %}

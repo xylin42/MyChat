@@ -1,0 +1,35 @@
+{% extends page_layout %}
+
+{% block stack_content %}
+   {% include "mychat/partials/stack_header.html" with stack_title="新的朋友" %}
+   <ul>
+      {% for request in friend_requests %}
+         <li>
+            <div class="flex items-center justify-between">
+               {% include "mychat/partials/user_card.html" with user=request.requester %}
+               <div class="flex items-center gap-4 text-xl">
+                  {% if request.status == request.Status.PENDING %}
+                     <input type="hidden" name="status" value="{{ request.Status.ACCEPTED }}" id="status-accepted">
+                     <input type="hidden" name="status" value="{{ request.Status.REJECTED }}" id="status-rejected">
+                     <span class="icon-[mdi--check] cursor-pointer hover:text-green-600"
+                           hx-patch="/friend-requests/{{ request.id }}"
+                           hx-include="inherit, #status-accepted"
+                           hx-headers='{ "X-CSRFToken": "{{ csrf_token }}" }'
+                     ></span>
+                     <span class="icon-[mdi--close] cursor-pointer hover:text-red-600"
+                           hx-patch="/friend-requests/{{ request.id }}"
+                           hx-include="inherit, #status-rejected"
+                           hx-headers='{ "X-CSRFToken": "{{ csrf_token }}" }'
+                     ></span>
+                  {% elif request.status == request.Status.ACCEPTED %}
+                     <span class="text-sm">已接受</span>
+                  {% elif request.status == request.Status.REJECTED %}
+                     <span>已拒绝</span>
+                  {% endif %}
+               </div>
+            </div>
+         </li>
+      {% endfor %}
+
+   </ul>
+{% endblock %}

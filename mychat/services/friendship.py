@@ -1,10 +1,9 @@
 from django.core.cache import cache
 from django.db import transaction
 from django.db.models import F
-from django_redis import get_redis_connection
 
 from mychat.events import user_event
-from mychat.models import FriendRequest, Friendship, User
+from mychat.models import FriendRequest, Friendship, User, user_pair
 from mychat.services import user_state
 
 incr_if_exists = """
@@ -40,8 +39,8 @@ def redis_locked_incr(key, loader):
    return v
 
 @transaction.atomic
-def establish_friendship(user, friend, remark=None):
-   Friendship.objects.create(user_id=user, friend_id=friend, remark=remark or "")
+def establish_friendship(user, friend_user, remark=None):
+   Friendship.objects.create(user_id=user, friend_user_id=friend_user.id, remark=remark or "")
 
 def incr_unread_friend_requests(recipient):
    User.objects.filter(id=recipient).update(unread_friend_requests=F('unread_friend_requests')+1)
@@ -54,13 +53,14 @@ def incr_unread_friend_requests(recipient):
 
 @transaction.atomic
 def send_friend_request(requester, recipient):
-   user1, user2 = sorted((requester, recipient))
-   req = FriendRequest.objects.create(user1_id=user1, user2_id=user2, requester_id=requester)
+   user_pair.delete_model_instance(FriendRequest, requester, recipient)
+
+   req = user_pair.create_model_instance(FriendRequest, requester_id=requester, recipient_id=recipient)
 
    unread = user_state.incr_unread_friend_requests(recipient)
 
-   transaction.on_commit(user_event.get_publish_func(recipient, "friend-request-received", {
-      'unread': unread
+   transaction.on_commit(user_event.get_publish_func(recipient, "", {
+      'unread_friend_requests': unread
    }))
 
    return req
